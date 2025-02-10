@@ -1,0 +1,193 @@
+[
+    {
+        "id": "7c9397686ac640c2",
+        "type": "tab",
+        "label": "Dane ESP32",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "045b8da8de6c9bfc",
+        "type": "http in",
+        "z": "7c9397686ac640c2",
+        "name": "",
+        "url": "/update-sensor",
+        "method": "post",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 140,
+        "y": 320,
+        "wires": [
+            [
+                "de31c1e9cde3bb47",
+                "0fc18f978884377f",
+                "280c14e61065ecf0"
+            ]
+        ]
+    },
+    {
+        "id": "de31c1e9cde3bb47",
+        "type": "http response",
+        "z": "7c9397686ac640c2",
+        "name": "",
+        "statusCode": "200",
+        "headers": {},
+        "x": 380,
+        "y": 220,
+        "wires": []
+    },
+    {
+        "id": "280c14e61065ecf0",
+        "type": "function",
+        "z": "7c9397686ac640c2",
+        "name": "Data filter",
+        "func": "// Przypisanie danych z msg.payload\nvar temperature = msg.payload.temperature;\nvar humidity = msg.payload.humidity;\nvar pressure = msg.payload.pressure;\nvar soilHumidity = msg.payload.soilHumidity;\n\n// Zakresy\nvar minTemp = 0;     // minimalna temperatura\nvar maxTemp = 50;    // maksymalna temperatura\nvar minHumidity = 0; // minimalna wilgotność\nvar maxHumidity = 100; // maksymalna wilgotność\nvar minPressure = 800;  // minimalne ciśnienie\nvar maxPressure = 1100; // maksymalne ciśnienie\n\n// Zmienna przechowująca poprzednie wartości, aby porównać je z nowymi\nvar prevTemperature = flow.get('prevTemperature') || null;\nvar prevHumidity = flow.get('prevHumidity') || null;\nvar prevSoilHumidity = flow.get('prevSoilHumidity') || null;\nvar prevPressure = flow.get('prevPressure') || null;\n\n// Ppróg zmian dla filtracji skoków\nvar tempChangeThreshold = 0.5;     // próg dla temperatury\nvar humidityChangeThreshold = 20; // próg dla wilgotności\nvar pressureChangeThreshold = 1;  // próg dla ciśnienia\nvar soilHumidityChangeThreshold = 50; // próg dla wilgotności gleby\n\n// Filtracja wartości z poza zakresu\nif (temperature >= minTemp && temperature <= maxTemp) {\n    if (prevTemperature !== null && Math.abs(temperature - prevTemperature) > tempChangeThreshold) {\n        msg.payload.filteredTemperature = null;  // Skok zbyt duży\n    } else {\n        msg.payload.filteredTemperature = temperature;\n    }\n    flow.set('prevTemperature', temperature);  // Przechowujemy ostatnią temperaturę\n} else {\n    msg.payload.filteredTemperature = null;  // Poza zakresem\n}\n\nif (humidity >= minHumidity && humidity <= maxHumidity) {\n    if (prevHumidity !== null && Math.abs(humidity - prevHumidity) > humidityChangeThreshold) {\n        msg.payload.filteredHumidity = null;  // Skok zbyt duży\n    } else {\n        msg.payload.filteredHumidity = humidity;\n    }\n    flow.set('prevHumidity', humidity);  // Przechowujemy ostatnią wilgotność\n} else {\n    msg.payload.filteredHumidity = null;  // Poza zakresem\n}\n\nif (pressure >= minPressure && pressure <= maxPressure) {\n    if (prevPressure !== null && Math.abs(pressure - prevPressure) > pressureChangeThreshold) {\n        msg.payload.filteredPressure = null;  // Skok zbyt duży\n    } else {\n        msg.payload.filteredPressure = pressure;\n    }\n    flow.set('prevPressure', pressure);  // Przechowujemy ostatnie ciśnienie\n} else {\n    msg.payload.filteredPressure = null;  // Poza zakresem\n}\n\nif (soilHumidity >= minHumidity && soilHumidity <= maxHumidity) {\n    if (prevSoilHumidity !== null && Math.abs(soilHumidity - prevSoilHumidity) > soilHumidityChangeThreshold) {\n        msg.payload.filteredSoilHumidity = null;  // Skok zbyt duży\n    } else {\n        msg.payload.filteredSoilHumidity = soilHumidity;\n    }\n    flow.set('prevSoilHumidity', soilHumidity);  // Przechowujemy ostatnią wilgotność\n} else {\n    msg.payload.filteredSoilHumidity = null;  // Poza zakresem\n}\n\n// Zwracamy dane do dalszego przetwarzania\nreturn msg;\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 380,
+        "y": 320,
+        "wires": [
+            [
+                "9791b9a49cccfc60",
+                "459149a58bc2a836"
+            ]
+        ]
+    },
+    {
+        "id": "0fc18f978884377f",
+        "type": "debug",
+        "z": "7c9397686ac640c2",
+        "name": "debug 1",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 300,
+        "y": 420,
+        "wires": []
+    },
+    {
+        "id": "9791b9a49cccfc60",
+        "type": "debug",
+        "z": "7c9397686ac640c2",
+        "name": "debug 2",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 500,
+        "y": 420,
+        "wires": []
+    },
+    {
+        "id": "459149a58bc2a836",
+        "type": "function",
+        "z": "7c9397686ac640c2",
+        "name": "Data average 3 minutes",
+        "func": "var temperatureData = context.get('temperatureData') || [];\nvar humidityData = context.get('humidityData') || [];\nvar pressureData = context.get('pressureData') || [];\nvar soilHumidityData = context.get('soilHumidityData') || [];\nvar maxDataAge = 3 * 60 * 1000; // 3 minuty\nvar lastSendTime = context.get('lastSendTime') || Date.now();\n\n// Funkcja do zbierania danych\nfunction collectData(newMeasurement) {    \n    // Przypisanie nowych danych\n    var newTemperature = newMeasurement.filteredTemperature;\n    var newHumidity = newMeasurement.filteredHumidity;\n    var newPressure = newMeasurement.filteredPressure;\n    var newSoilHumidity = newMeasurement.filteredSoilHumidity;\n\n    // Sprawdź, czy dane są przefiltrowane (czy są różne od null)\n    if (newTemperature !== null && newHumidity !== null && newPressure !== null && newSoilHumidity !== null) {\n\n        // Dodaj dane do tablic\n        temperatureData.push(newTemperature);\n        humidityData.push(newHumidity);\n        pressureData.push(newPressure);\n        soilHumidityData.push(newSoilHumidity);\n\n        // Sprawdź, czy minęło 5 minut\n        var elapsedTime = Date.now() - lastSendTime;\n\n        // Zapisz dane na kontekście\n        context.set('temperatureData', temperatureData);\n        context.set('humidityData', humidityData);\n        context.set('pressureData', pressureData);\n        context.set('soilHumidityData', soilHumidityData);\n        context.set('lastSendTime', lastSendTime);\n\n        if (elapsedTime >= maxDataAge) {\n            // Oblicz średnią\n            var avgTemperature = temperatureData.reduce((a, b) => a + b, 0) / temperatureData.length;\n            var avgHumidity = humidityData.reduce((a, b) => a + b, 0) / humidityData.length;\n            var avgPressure = pressureData.reduce((a, b) => a + b, 0) / pressureData.length;\n            var avgSoilHumidity = soilHumidityData.reduce((a, b) => a + b, 0) / soilHumidityData.length;\n\n            // Zaokrąglenie wartości\n            avgTemperature = Math.round(avgTemperature * 10) / 10; // Do 1 miejsca po przecinku\n            avgHumidity = Math.round(avgHumidity); // Liczba całkowita\n            avgPressure = Math.round(avgPressure * 10) / 10; // Do 1 miejsca po przecinku\n            avgSoilHumidity = Math.round(avgSoilHumidity); // Liczba całkowita\n\n            // Resetuj tablice\n            temperatureData = [];\n            humidityData = [];\n            pressureData = [];\n            soilHumidityData = [];\n\n            // Zapisz puste tablice na kontekście\n            context.set('temperatureData', temperatureData);\n            context.set('humidityData', humidityData);\n            context.set('pressureData', pressureData);\n            context.set('soilHumidityData', soilHumidityData);\n\n            // Zaktualizuj czas ostatniego wysłania\n            lastSendTime = Date.now();\n            context.set('lastSendTime', lastSendTime);\n\n            // Zwróć obliczoną średnią\n            return {\n                payload: {\n                    temperature: avgTemperature,\n                    humidity: avgHumidity,\n                    pressure: avgPressure,\n                    soilHumidity: avgSoilHumidity\n                }\n            };\n        } else {\n            // Jeśli nie minęło 5 minut, po prostu nie zwracaj niczego\n            return null;\n        }\n    } else {\n        // Jeśli dane są puste po filtracji, nie dodajemy ich\n        return null;\n    }\n}\n\n// Uruchom funkcję zbierania danych\nreturn collectData(msg.payload);\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 590,
+        "y": 320,
+        "wires": [
+            [
+                "28158d796059ef81",
+                "7c62e19004e0e079"
+            ]
+        ]
+    },
+    {
+        "id": "28158d796059ef81",
+        "type": "debug",
+        "z": "7c9397686ac640c2",
+        "name": "debug 3",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 760,
+        "y": 420,
+        "wires": []
+    },
+    {
+        "id": "6003d0629e65076f",
+        "type": "http request",
+        "z": "7c9397686ac640c2",
+        "name": "",
+        "method": "POST",
+        "ret": "txt",
+        "paytoqs": "ignore",
+        "url": "https://api.thingspeak.com/update?api_key=9L8GRUFN2IXJBYS0",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 1050,
+        "y": 320,
+        "wires": [
+            [
+                "e1f22afac62714ca"
+            ]
+        ]
+    },
+    {
+        "id": "e1f22afac62714ca",
+        "type": "debug",
+        "z": "7c9397686ac640c2",
+        "name": "debug 4",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 940,
+        "y": 220,
+        "wires": []
+    },
+    {
+        "id": "7c62e19004e0e079",
+        "type": "function",
+        "z": "7c9397686ac640c2",
+        "name": "Prepare data to send",
+        "func": "return {\n    payload: `field1=${msg.payload.temperature}&field2=${msg.payload.humidity}&field3=${msg.payload.pressure}&field4=${msg.payload.soilHumidity}`\n};\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 840,
+        "y": 320,
+        "wires": [
+            [
+                "6003d0629e65076f"
+            ]
+        ]
+    }
+]
