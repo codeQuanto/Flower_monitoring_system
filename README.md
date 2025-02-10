@@ -11,6 +11,6 @@ Projekt obejmuje:
 - Node-RED do przetwarzania danych
 - ThingSpeak do przechowywania i wizualizacji danych
 
-Schematy i zdjęcia poglądowe znajdują się w katalogu docs. Plik .json to zapisany diagram przepływu z NodeRed.
+Schematy i zdjęcia poglądowe znajdują się w katalogu [docs](.docs). Plik [.json.json to zapisany diagram przepływu z NodeRed.
 
 Była to moja pierwsza styczność z IoT
